@@ -1,0 +1,29 @@
+<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bot BTC – panel</title><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#0f172a">
+<link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>body{margin:0;font-family:system-ui,sans-serif;background:#0f172a;color:#e2e8f0}main{max-width:560px;margin:auto;padding:14px}
+.c{background:#1e293b;border-radius:14px;padding:14px;margin-bottom:12px}.l{font-size:13px;color:#94a3b8}.v{font-size:28px;font-weight:700}
+.g{color:#22c55e}.r{color:#ef4444}table{width:100%;font-size:13px;border-collapse:collapse}td,th{padding:4px;border-bottom:1px solid #334155;text-align:left}
+img{width:100%;border-radius:8px}.n{font-size:12px;color:#94a3b8;text-align:center}</style></head><body><main>
+<h2>🤖 Bot BTC/USDT <small style="font-size:12px;color:#fbbf24">SYMULACJA</small></h2>
+<div class="c"><div class="l">Cena BTC</div><div class="v" id="price">–</div></div>
+<div class="c"><div class="l">Saldo wirtualne (start 10 000 USDT)</div><div class="v" id="eq">–</div><div id="eqp"></div></div>
+<div class="c"><div class="l">Kup i trzymaj</div><div class="v" id="bh">–</div><div id="bhp"></div></div>
+<div class="c"><div class="l">Otwarta pozycja</div><div id="pos">–</div></div>
+<div class="c"><div class="l">Saldo vs kup i trzymaj</div><canvas id="ch" height="220"></canvas></div>
+<div class="c"><div class="l">Transakcje</div><div id="tr">–</div></div>
+<div class="c"><div class="l">Backtest (2 lata)</div><img src="backtest.png" alt="backtest"></div>
+<p class="n" id="upd"></p></main><script>
+const f=(x,d=2)=>Number(x).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
+const pc=(v,s)=>{const p=(v/s-1)*100;return `<span class="${p>=0?'g':'r'}">${p>=0?'+':''}${f(p)}%</span>`};
+const dt=t=>new Date(t).toLocaleString('pl-PL',{timeZone:'Europe/Warsaw'});let chart;
+async function load(){try{const s=await (await fetch('data.json?'+Date.now())).json();const S=s.start_cash;
+price.textContent=f(s.price)+' $';eq.textContent=f(s.equity_now)+' USDT';eqp.innerHTML=pc(s.equity_now,S);
+const b=S*s.price/s.start_price;bh.textContent=f(b)+' USDT';bhp.innerHTML=pc(b,S);
+pos.innerHTML=s.qty>0?`${f(s.qty,6)} BTC, wejście ${f(s.entry)} $, wynik ${pc(s.price,s.entry)}`:'Brak – czekam na sygnał (gotówka: '+f(s.cash)+' USDT)';
+tr.innerHTML=s.trades.length?'<table><tr><th>Czas</th><th>Typ</th><th>Cena</th><th>Ilość</th></tr>'+s.trades.slice().reverse().map(t=>`<tr><td>${dt(t.t||t.time)}</td><td>${t.side||t.type||''}</td><td>${f(t.price)}</td><td>${f(t.qty||0,6)}</td></tr>`).join('')+'</table>':'Brak transakcji';
+const L=s.equity.map(e=>dt(e.t).slice(0,17)),D=[{label:'Bot',data:s.equity.map(e=>e.eq),borderColor:'#22c55e',pointRadius:0},{label:'Kup i trzymaj',data:s.equity.map(e=>e.bh),borderColor:'#60a5fa',pointRadius:0}];
+if(chart){chart.data.labels=L;chart.data.datasets=D;chart.update()}else chart=new Chart(ch,{type:'line',data:{labels:L,datasets:D},options:{plugins:{legend:{labels:{color:'#e2e8f0'}}},scales:{x:{ticks:{color:'#94a3b8',maxTicksLimit:4}},y:{ticks:{color:'#94a3b8'}}}}});
+upd.textContent='Ostatnia aktualizacja: '+dt(s.updated)+' (odświeża się co 5 min)';}catch(e){upd.textContent='Błąd ładowania danych'}}
+load();setInterval(load,300000);</script></body></html>
